@@ -103,11 +103,12 @@ export default function Register() {
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Server registration failed');
+        throw new Error(data.message || 'Server registration failed');
       }
 
-      const data = await response.json();
       console.log('Server response:', data);
       
       setKeyPair(keys);
@@ -119,7 +120,7 @@ export default function Register() {
 
       } catch (error) {
       console.error("Registration error:", error);
-      setErrors({ general: "Registration failed. Please try again." });
+      setErrors({ general: error instanceof Error ? error.message : "Registration failed. Please try again." });
       setIsRegistering(false);
       }
   };
