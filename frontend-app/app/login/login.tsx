@@ -35,8 +35,8 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center p-4 grid-background">
+      <Card className="w-full max-w-md glass-card">
         <CardHeader className="space-y-4">
           <div className="flex justify-center">
             <img src="/ecchatlogo.png" alt="ECChat Logo" className="h-20 w-auto glow-primary" />

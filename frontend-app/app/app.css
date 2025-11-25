@@ -86,6 +86,44 @@
   filter: drop-shadow(0 0 10px var(--primary));
 }
 
+/* Glassmorphism card effect */
+.glass-card {
+  background: rgba(26, 0, 0, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 0, 0, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(255, 0, 0, 0.1);
+}
+
+/* Animated grid background */
+.grid-background {
+  background-image: 
+    linear-gradient(rgba(255, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 0, 0, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+  position: relative;
+}
+
+.grid-background::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 0, 0, 0.1) 0%, transparent 50%);
+  animation: pulse 4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 @layer base {
   button:not([disabled]),
   [role="button"]:not([disabled]) {
