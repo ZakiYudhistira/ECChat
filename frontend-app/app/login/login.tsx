@@ -42,7 +42,7 @@ export default function Login() {
             <img src="/ecchatlogo.png" alt="ECChat Logo" className="h-20 w-auto glow-primary" />
           </div>
           <CardTitle className="text-2xl font-bold text-center">Welcome Back</CardTitle>
-          <CardDescription className="text-center">Login to your ECChat account</CardDescription>
+          <CardDescription className="text-center">Login to your <span className='font-bold text-red-500 glow-primary'>ECChat</span> account</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">

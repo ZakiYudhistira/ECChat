@@ -133,7 +133,7 @@ export default function Register() {
             <img src="/ecchatlogo.png" alt="ECChat Logo" className="h-20 w-auto glow-primary" />
           </div>
           <CardTitle className="text-2xl font-bold text-center">Create Account</CardTitle>
-          <CardDescription className="text-center">Join ECChat and start connecting</CardDescription>
+          <CardDescription className="text-center">Join <span className='font-bold text-red-500 glow-primary'>ECChat</span> and start connecting</CardDescription>
         </CardHeader>
         <CardContent>
           {keyPair ? (
