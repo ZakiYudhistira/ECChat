@@ -7,6 +7,8 @@ import {
   ScrollRestoration,
 } from "react-router";
 
+import {Toaster, toast} from 'sonner';
+
 import type { Route } from "./+types/root";
 import "./app.css";
 
@@ -33,6 +35,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
+        <Toaster
+          toastOptions={{
+            style: {
+              background: '!bg-red-100',
+              border: '0px',
+            },
+          }}
+          duration={1000000}
+        />
         {children}
         <ScrollRestoration />
         <Scripts />

@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../co
 import type { Route } from "./+types/login";
 import { API_ROUTES } from "config/api";
 import {generateKeyPair, signMessage} from "../helpers/crypto";
+import { redirect } from "react-router";
+import { Toaster, toast } from 'sonner';
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -75,11 +77,9 @@ export default function Login() {
       if (challengeResponse.ok && challengeData.success) {
         console.log('Login successful!');
         // Handle login
-        alert('Login successful!');
-        
-        setNonce(null);
+        toast.success('Login successful!');
+        redirect('/chat');
         setKeyPair(null);
-        setLoginData({ username: "", password: "" });
       } else {
         throw new Error(challengeData.message || 'Challenge verification failed');
       }
