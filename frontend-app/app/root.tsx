@@ -38,11 +38,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Toaster
           toastOptions={{
             style: {
-              background: '!bg-red-100',
+              background: 'red',
               border: '0px',
             },
+            classNames: {
+              description: '!text-white',
+              title: '!text-white',
+              icon: '!text-white'
+            }
           }}
-          duration={1000000}
+          duration={2000}
         />
         {children}
         <ScrollRestoration />

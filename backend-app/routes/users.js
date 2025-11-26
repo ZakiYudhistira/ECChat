@@ -1,8 +1,11 @@
 var express = require('express');
-const { ed25519 } = require('@noble/ed25519');
 var router = express.Router();
 const User = require('../models/User');
 const NonceChallenge = require('../models/NonceChallenge');
+const elliptic = require('elliptic');
+const EC = elliptic.ec;
+const ec = new EC('secp256k1');
+const jwt = require('jsonwebtoken');
 
 /* GET users listing. */
 router.get('/', function(req, res, next) {
@@ -71,15 +74,13 @@ router.post('/challenge', async function(req, res, next) {
     }
     
     // Verify signature
-    const elliptic = require('elliptic');
-    const EC = elliptic.ec;
-    const ec = new EC('secp256k1');
+    
     
     try {
       const messageBytes = new TextEncoder().encode(nonce);
       const key = ec.keyFromPublic(user.publicKey, 'hex');
       
-      // Parse r and s from concatenated hex signature
+      // Parse r and s from hex signature
       const r = signature.slice(0, 64);
       const s = signature.slice(64, 128);
       const parsedSignature = { r: r, s: s };
@@ -92,15 +93,34 @@ router.post('/challenge', async function(req, res, next) {
           message: 'Invalid signature'
         });
       }
+
+      // JWT Generation
+      const token = jwt.sign({ 
+          userId: user._id,
+          username: user.username 
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '7d' }
+      );
+
+      console.log('JWT Token', token);
+
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      });
       
-      // Delete the nonce from database after successful verification
+      // Delete the nonce from database after successful challenge
       await NonceChallenge.deleteOne({ nonce });
       
       console.log('Login successful for user:', username);
       res.json({ 
         success: true, 
         message: 'Login successful',
-        username: user.username
+        username: user.username,
+        token // Token on response
       });
       
     } catch (verifyError) {

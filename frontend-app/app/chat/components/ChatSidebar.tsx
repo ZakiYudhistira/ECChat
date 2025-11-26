@@ -4,7 +4,8 @@ import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Plus, Search, Home, LogOut } from "lucide-react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
+import { clearAuthData } from "~/helpers/storage";
 
 interface Conversation {
   id: string;
@@ -65,6 +66,13 @@ interface ChatSidebarProps {
 }
 
 export function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarProps) {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    clearAuthData(); // Clear JWT and keys
+    navigate('/login', { replace: true });
+  };
+  
   return (
     <div className="w-fit border-r border-border flex flex-col h-full">
       <div className="p-4 border-b border-border">
@@ -147,7 +155,7 @@ export function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarProps) {
               Home
             </Button>
           </Link>
-          <Button variant="destructive" size="sm" className="flex-1">
+          <Button variant="destructive" size="sm" className="flex-1" onClick={handleLogout}>
             <LogOut className="w-4 h-4 mr-2" />
             Logout
           </Button>

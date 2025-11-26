@@ -6,9 +6,13 @@ import { Label } from "../components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import type { Route } from "./+types/login";
 import { API_ROUTES } from "config/api";
+
 import {generateKeyPair, signMessage} from "../helpers/crypto";
-import { redirect } from "react-router";
+import { storeAuthData, isAuthenticated } from "../helpers/storage";
+
+import { useNavigate } from "react-router";
 import { Toaster, toast } from 'sonner';
+
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -18,6 +22,12 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Login() {
+  const navigate = useNavigate();
+  
+  // if(isAuthenticated()){
+  //   navigate('/chat');
+  // }
+
   const [loginData, setLoginData] = useState({ username: "", password: "" });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [nonce, setNonce] = useState<string | null>(null);
@@ -38,10 +48,12 @@ export default function Login() {
 
     setIsLoading(true);
 
+    // Key Generation
     try {
       const pair = await generateKeyPair(loginData.password, loginData.username);
       setKeyPair(pair);
-
+      
+      // Nonce request
       const response = await fetch(API_ROUTES.LOGIN, {
         method: 'GET',
         headers: {
@@ -58,6 +70,7 @@ export default function Login() {
       setNonce(data.nonce);
       console.log("Login nonce received:", data.nonce);
 
+      // Nonce signing
       const signature = await signMessage(data.nonce, pair.privateKey);
       
       const challengeResponse = await fetch(API_ROUTES.CHALLENGE, {
@@ -72,13 +85,22 @@ export default function Login() {
         })
       });
       
+      // JWT retrieval
       const challengeData = await challengeResponse.json();
       
+      // Handle login processes
       if (challengeResponse.ok && challengeData.success) {
+        storeAuthData(
+          loginData.username,
+          pair.publicKey,
+          pair.privateKey,
+          challengeData.token // JWT from server
+        );
+        
         console.log('Login successful!');
-        // Handle login
+        
         toast.success('Login successful!');
-        redirect('/chat');
+        navigate("/chat");
         setKeyPair(null);
       } else {
         throw new Error(challengeData.message || 'Challenge verification failed');
