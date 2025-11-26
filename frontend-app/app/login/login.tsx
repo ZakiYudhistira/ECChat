@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -24,9 +24,11 @@ export function meta({}: Route.MetaArgs) {
 export default function Login() {
   const navigate = useNavigate();
   
-  // if(isAuthenticated()){
-  //   navigate('/chat');
-  // }
+  useEffect(() => {
+    if (isAuthenticated()) {
+      navigate('/', { replace: true });
+    }
+  }, [navigate]);
 
   const [loginData, setLoginData] = useState({ username: "", password: "" });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
