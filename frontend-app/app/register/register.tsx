@@ -5,7 +5,9 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import type { Route } from "./+types/register";
-import { ed25519 } from '@noble/curves/ed25519.js';
+
+import { API_ROUTES } from "../../config/api";
+import { generateKeyPair } from "../helpers/crypto";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -13,40 +15,6 @@ export function meta({}: Route.MetaArgs) {
     { name: "description", content: "Create a new ECChat account" },
   ];
 }
-
-export async function generateKeyPair(password: string, username: string) {
-  const encoder = new TextEncoder();
-
-  const keyMaterial = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(password),
-    { name: "PBKDF2" },
-    false,
-    ["deriveBits"]
-  );
-
-  const seedBits = await crypto.subtle.deriveBits(
-    {
-      name: "PBKDF2",
-      salt: encoder.encode(username),
-      iterations: 600000,
-      hash: "SHA-256",
-    },
-    keyMaterial,
-    256
-  );
-
-  let seed = new Uint8Array(seedBits);
-  const publicKeyBytes = await ed25519.getPublicKey(seed);
-
-  const toHex = (arr: Uint8Array) => Array.from(arr).map(b => b.toString(16).padStart(2, "0")).join("");
-
-  return {
-    privateKey: toHex(seed),
-    publicKey: toHex(publicKeyBytes),
-  };
-}
-
 
 export default function Register() {
   const [registerData, setRegisterData] = useState({ username: "", password: "", confirmPassword: "" });
@@ -91,8 +59,7 @@ export default function Register() {
           throw new Error("Key generation returned null");
       }
       
-      // Send only username and public key to the server
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/users/register`, {
+      const response = await fetch(API_ROUTES.REGISTER, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -120,7 +87,7 @@ export default function Register() {
 
       } catch (error) {
       console.error("Registration error:", error);
-      setErrors({ general: error instanceof Error ? error.message : "Registration failed. Please try again." });
+      setErrors({ general: error instanceof Error ? "Registration failed. Please try again: " + error.message : "Registration failed. Please try again." });
       setIsRegistering(false);
       }
   };
