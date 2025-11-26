@@ -1,10 +1,13 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import type { Route } from "./+types/register";
+
+import { API_ROUTES } from "../../config/api";
+import { generateKeyPair } from "../helpers/crypto";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -16,51 +19,118 @@ export function meta({}: Route.MetaArgs) {
 export default function Register() {
   const [registerData, setRegisterData] = useState({ username: "", password: "", confirmPassword: "" });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [keyPair, setKeyPair] = useState<{ publicKey: string; privateKey: string } | null>(null);
+  const navigate = useNavigate();
 
-  const handleRegister = (e: React.FormEvent) => {
-    e.preventDefault();
-    const newErrors: { [key: string]: string } = {};
+  const handleRegister = async (e: React.FormEvent) => {
+      e.preventDefault();
+      const newErrors: { [key: string]: string } = {};
 
-    if (!registerData.username) {
+      if (!registerData.username) {
       newErrors.username = "Username is required";
-    } else if (registerData.username.length < 3) {
+      } else if (registerData.username.length < 3) {
       newErrors.username = "Username must be at least 3 characters";
-    }
+      }
 
-    if (!registerData.password) {
+      if (!registerData.password) {
       newErrors.password = "Password is required";
-    } else if (registerData.password.length < 6) {
+      } else if (registerData.password.length < 6) {
       newErrors.password = "Password must be at least 6 characters";
-    }
+      }
 
-    if (!registerData.confirmPassword) {
+      if (!registerData.confirmPassword) {
       newErrors.confirmPassword = "Please confirm your password";
-    } else if (registerData.password !== registerData.confirmPassword) {
+      } else if (registerData.password !== registerData.confirmPassword) {
       newErrors.confirmPassword = "Passwords do not match";
-    }
+      }
 
-    if (Object.keys(newErrors).length > 0) {
+      if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
-    }
+      }
 
-    // Handle register logic here
-    console.log("Register:", { username: registerData.username, password: registerData.password });
-    setErrors({});
+      setIsRegistering(true);
+
+      try {
+      const keys = await generateKeyPair(registerData.password, registerData.username);
+      
+      if (!keys) {
+          throw new Error("Key generation returned null");
+      }
+      
+      const response = await fetch(API_ROUTES.REGISTER, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: registerData.username,
+          publicKey: keys.publicKey,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Server registration failed');
+      }
+
+      console.log('Server response:', data);
+      
+      setKeyPair(keys);
+
+      // setTimeout(() => {
+      //     navigate("/login");
+      // }, 5000);
+
+
+      } catch (error) {
+      console.error("Registration error:", error);
+      setErrors({ general: error instanceof Error ? "Registration failed. Please try again: " + error.message : "Registration failed. Please try again." });
+      setIsRegistering(false);
+      }
   };
-
+    
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center p-4 grid-background">
+      <Card className="w-full max-w-md glass-card">
         <CardHeader className="space-y-4">
           <div className="flex justify-center">
             <img src="/ecchatlogo.png" alt="ECChat Logo" className="h-20 w-auto glow-primary" />
           </div>
           <CardTitle className="text-2xl font-bold text-center">Create Account</CardTitle>
-          <CardDescription className="text-center">Join ECChat and start connecting</CardDescription>
+          <CardDescription className="text-center">Join <span className='font-bold text-red-500 glow-primary'>ECChat</span> and start connecting</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleRegister} className="space-y-4">
+          {keyPair ? (
+            <div className="space-y-4">
+              <div className="text-center space-y-2">
+                <h3 className="text-lg font-semibold text-primary">Registration Successful!</h3>
+              </div>
+
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Public Key:</Label>
+                  <div className="p-3 bg-muted rounded-md break-all text-xs font-mono">
+                    {keyPair.publicKey}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Private Key:</Label>
+                  <div className="p-3 bg-muted rounded-md break-all text-xs font-mono">
+                    {keyPair.privateKey}
+                  </div>
+                </div>
+              </div>
+
+              <Link to="/login" className="block">
+                <Button className="w-full">Go to Login</Button>
+              </Link>
+            </div>
+          ) : (
+            <form onSubmit={handleRegister} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="register-username">Username</Label>
               <Input
@@ -109,8 +179,14 @@ export default function Register() {
               {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
             </div>
 
-            <Button type="submit" className="w-full">
-              Register
+            {errors.general && (
+              <div className="p-3 bg-destructive/10 border border-destructive rounded-md">
+                <p className="text-sm text-destructive">{errors.general}</p>
+              </div>
+            )}
+
+            <Button type="submit" className="w-full" disabled={isRegistering}>
+              {isRegistering ? "Generating Keys..." : "Register"}
             </Button>
 
             <div className="text-center text-sm text-muted-foreground">
@@ -120,6 +196,7 @@ export default function Register() {
               </Link>
             </div>
           </form>
+          )}
         </CardContent>
       </Card>
     </div>
