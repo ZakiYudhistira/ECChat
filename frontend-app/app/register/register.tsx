@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, redirect, useNavigate } from "react-router";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -10,6 +10,7 @@ import { API_ROUTES } from "../../config/api";
 import { generateKeyPair } from "../helpers/crypto";
 
 import { isAuthenticated } from "../helpers/storage";
+import { toast } from "sonner";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -18,15 +19,14 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-export default function Register() {
-  const navigate = useNavigate();
+export async function loader() {
+  if (isAuthenticated()) {
+    return redirect('/chat');
+  }
+}
 
-  useEffect(() => {
-    if (isAuthenticated()) {
-        navigate('/chat', { replace: true });
-      }
-    }, [navigate]);
-  
+export default function Register() {
+  const navigate = useNavigate();  
   const [registerData, setRegisterData] = useState({ username: "", password: "", confirmPassword: "" });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isRegistering, setIsRegistering] = useState(false);
@@ -95,6 +95,7 @@ export default function Register() {
 
 
       } catch (error) {
+      toast.error('Registration failed. Please try again.');
       console.error("Registration error:", error);
       setErrors({ general: error instanceof Error ? "Registration failed. Please try again: " + error.message : "Registration failed. Please try again." });
       setIsRegistering(false);

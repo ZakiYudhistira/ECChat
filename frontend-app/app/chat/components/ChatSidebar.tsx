@@ -91,6 +91,12 @@ export function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarProps) {
     // Here you could potentially start a conversation with the contact
     console.log('Selected contact:', contact);
   };
+
+  const handleContactRemove = (username: string) => {
+    if (selectedContact === username) {
+      setSelectedContact(null);
+    }
+  };
   
   const authData = getAuthData();
 
@@ -127,6 +133,7 @@ export function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarProps) {
               onContactSelect={handleContactSelect}
               selectedContactUsername={selectedContact}
               refreshTrigger={contactRefreshTrigger}
+              onContactRemove={handleContactRemove}
             />
           ) : (
             <ConversationList 

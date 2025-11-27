@@ -19,9 +19,10 @@ interface ContactListProps {
   onContactSelect?: (contact: Contact) => void;
   selectedContactUsername?: string | null;
   refreshTrigger?: number;
+  onContactRemove?: (username: string) => void;
 }
 
-export function ContactList({ onContactSelect, selectedContactUsername, refreshTrigger }: ContactListProps) {
+export function ContactList({ onContactSelect, selectedContactUsername, refreshTrigger, onContactRemove }: ContactListProps) {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [isLoadingContacts, setIsLoadingContacts] = useState(false);
   const [removingContact, setRemovingContact] = useState<string | null>(null);
@@ -49,10 +50,14 @@ export function ContactList({ onContactSelect, selectedContactUsername, refreshT
     if (!contactToRemove) return;
 
     setRemovingContact(contactToRemove);
+
     try {
       await removeContact(contactToRemove);
       toast.success(`${contactToRemove} removed from contacts`);
       await loadContacts();
+      if(contactToRemove === selectedContactUsername) {
+        onContactRemove?.(contactToRemove);
+      }
     } catch (error) {
       console.error('Failed to remove contact:', error);
       toast.error('Failed to remove contact');

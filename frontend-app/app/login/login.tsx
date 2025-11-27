@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router";
+import { Link, redirect } from "react-router";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -21,15 +21,15 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
+export async function loader() {
+  if (isAuthenticated()) {
+    return redirect('/chat');
+  }
+  return null;
+}
+
 export default function Login() {
   const navigate = useNavigate();
-  
-  useEffect(() => {
-    if (isAuthenticated()) {
-      navigate('/chat', { replace: true });
-    }
-  }, [navigate]);
-
   const [loginData, setLoginData] = useState({ username: "", password: "" });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [nonce, setNonce] = useState<string | null>(null);
@@ -110,6 +110,7 @@ export default function Login() {
 
       setErrors({});
     } catch (error) {
+      toast.error('Login failed. Please try again.');
       console.error("Login error:", error);
       setErrors({ general: error instanceof Error ? error.message : "Login failed. Please try again." });
     } finally {
@@ -163,7 +164,7 @@ export default function Login() {
 
             {nonce && (
               <div className="space-y-2">
-                <Label className="text-sm font-semibold">Processing Challenge:</Label>
+                <Label className="text-sm font-semibold">Nonce Challenge:</Label>
                 <div className="p-3 bg-muted rounded-md break-all text-xs font-mono">
                   {nonce}
                 </div>
