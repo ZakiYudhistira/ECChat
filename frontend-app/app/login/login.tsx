@@ -26,7 +26,7 @@ export default function Login() {
   
   useEffect(() => {
     if (isAuthenticated()) {
-      navigate('/', { replace: true });
+      navigate('/chat', { replace: true });
     }
   }, [navigate]);
 

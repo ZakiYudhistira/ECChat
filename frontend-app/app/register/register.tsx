@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -9,6 +9,8 @@ import type { Route } from "./+types/register";
 import { API_ROUTES } from "../../config/api";
 import { generateKeyPair } from "../helpers/crypto";
 
+import { isAuthenticated } from "../helpers/storage";
+
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "ECC Register" },
@@ -17,11 +19,18 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Register() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated()) {
+        navigate('/chat', { replace: true });
+      }
+    }, [navigate]);
+  
   const [registerData, setRegisterData] = useState({ username: "", password: "", confirmPassword: "" });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isRegistering, setIsRegistering] = useState(false);
   const [keyPair, setKeyPair] = useState<{ publicKey: string; privateKey: string } | null>(null);
-  const navigate = useNavigate();
 
   const handleRegister = async (e: React.FormEvent) => {
       e.preventDefault();

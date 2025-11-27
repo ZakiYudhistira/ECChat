@@ -5,7 +5,8 @@ import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Plus, Search, Home, LogOut } from "lucide-react";
 import { Link, useNavigate } from "react-router";
-import { clearAuthData } from "~/helpers/storage";
+import { clearAuthData, getAuthData } from "~/helpers/storage";
+import { toast } from "sonner";
 
 interface Conversation {
   id: string;
@@ -67,12 +68,15 @@ interface ChatSidebarProps {
 
 export function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarProps) {
   const navigate = useNavigate();
-
+  
   const handleLogout = () => {
     clearAuthData(); // Clear JWT and keys
+    toast.success("Logged out successfully");
     navigate('/login', { replace: true });
   };
   
+  const authData = getAuthData();
+
   return (
     <div className="w-fit border-r border-border flex flex-col h-full">
       <div className="p-4 border-b border-border">
@@ -95,7 +99,7 @@ export function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarProps) {
       <ScrollArea className="flex-1">
         <div className="p-2">
           {mockConversations.map((conversation) => (
-            <button
+            <button 
               key={conversation.id}
               onClick={() => onSelectChat(conversation.id)}
               className={`w-full p-3 rounded-lg flex items-start gap-3 hover:bg-accent transition-colors ${
@@ -139,12 +143,12 @@ export function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarProps) {
         <div className="flex items-center gap-2">
           <Avatar className="h-8 w-8">
             <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-              JD
+              {authData?.username.substring(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">Logged in as</p>
-            <p className="text-xs text-muted-foreground truncate">johndoe</p>
+            <p className="text-sm font-medium truncate">Welcome Back,</p>
+            <p className="text-xs text-muted-foreground truncate">{authData?.username}</p>
           </div>
         </div>
         
