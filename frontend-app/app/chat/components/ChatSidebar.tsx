@@ -1,12 +1,16 @@
+import { useState } from "react";
 import { ScrollArea } from "../../components/ui/scroll-area";
-import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
-import { Badge } from "../../components/ui/badge";
+import { Avatar, AvatarFallback } from "../../components/ui/avatar";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
-import { Plus, Search, Home, LogOut } from "lucide-react";
+import { Search, Home, LogOut, Users } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { clearAuthData, getAuthData } from "~/helpers/storage";
 import { toast } from "sonner";
+import { AddContactDialog } from "./AddContactDialog";
+import { ContactList } from "./ContactList";
+import { ConversationList } from "./ConversationList";
+import { type Contact } from "../../controller/Contact";
 
 interface Conversation {
   id: string;
@@ -68,6 +72,9 @@ interface ChatSidebarProps {
 
 export function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarProps) {
   const navigate = useNavigate();
+  const [showContacts, setShowContacts] = useState(false);
+  const [selectedContact, setSelectedContact] = useState<string | null>(null);
+  const [contactRefreshTrigger, setContactRefreshTrigger] = useState(0);
   
   const handleLogout = () => {
     clearAuthData(); // Clear JWT and keys
@@ -75,67 +82,59 @@ export function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarProps) {
     navigate('/login', { replace: true });
   };
   
+  const handleContactAdded = () => {
+    setContactRefreshTrigger(prev => prev + 1); // Trigger contact list refresh
+  };
+
+  const handleContactSelect = (contact: Contact) => {
+    setSelectedContact(contact.username);
+    // Here you could potentially start a conversation with the contact
+    console.log('Selected contact:', contact);
+  };
+  
   const authData = getAuthData();
 
   return (
     <div className="w-fit border-r border-border flex flex-col h-full">
       <div className="p-4 border-b border-border">
-        <h2 className="text-xl font-bold mb-4">Messages</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">{showContacts ? 'Contacts' : 'Messages'}</h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowContacts(!showContacts)}
+            className="text-primary hover:bg-primary/10"
+          >
+            <Users className="w-5 h-5" />
+          </Button>
+        </div>
         <div className="relative flex items-center">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search conversations..."
+            placeholder={showContacts ? "Search contacts..." : "Search conversations..."}
             className="pl-9"
           />
-          <button
-            className="ml-2 p-2 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition"
-            aria-label="Add new conversation"
-          >
-            <Plus className="w-5 h-5" />
-          </button>
+          <div className="ml-2">
+            <AddContactDialog onContactAdded={handleContactAdded} />
+          </div>
         </div>
       </div>
       
       <ScrollArea className="flex-1">
         <div className="p-2">
-          {mockConversations.map((conversation) => (
-            <button 
-              key={conversation.id}
-              onClick={() => onSelectChat(conversation.id)}
-              className={`w-full p-3 rounded-lg flex items-start gap-3 hover:bg-accent transition-colors ${
-                selectedChat === conversation.id ? "bg-accent" : ""
-              }`}
-            >
-              <div className="relative">
-                <Avatar>
-                  <AvatarImage src={conversation.avatar} />
-                  <AvatarFallback className="bg-primary text-primary-foreground">
-                    {conversation.name.substring(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                {conversation.online && (
-                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-background" />
-                )}
-              </div>
-              
-              <div className="flex-1 text-left overflow-hidden">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-semibold text-sm">{conversation.name}</span>
-                  <span className="text-xs text-muted-foreground">{conversation.timestamp}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground truncate">
-                    {conversation.lastMessage}
-                  </p>
-                  {conversation.unread > 0 && (
-                    <Badge variant="default" className="ml-2 h-5 min-w-5 flex items-center justify-center">
-                      {conversation.unread}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            </button>
-          ))}
+          {showContacts ? (
+            <ContactList 
+              onContactSelect={handleContactSelect}
+              selectedContactUsername={selectedContact}
+              refreshTrigger={contactRefreshTrigger}
+            />
+          ) : (
+            <ConversationList 
+              conversations={mockConversations}
+              selectedChat={selectedChat}
+              onSelectChat={onSelectChat}
+            />
+          )}
         </div>
       </ScrollArea>
       

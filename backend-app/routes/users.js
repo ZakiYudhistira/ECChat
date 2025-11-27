@@ -1,6 +1,7 @@
 var express = require('express');
 var router = express.Router();
 const User = require('../models/User');
+const Contact = require('../models/Contact');
 const NonceChallenge = require('../models/NonceChallenge');
 const elliptic = require('elliptic');
 const EC = elliptic.ec;
@@ -161,9 +162,16 @@ router.post('/register', async function(req, res, next) {
       publicKey
     });
 
+    // Create empty contact list for new user
+    await Contact.create({
+      username: username,
+      contactList: [] // Start with empty contact list
+    });
+
     console.log('New User Registered:');
     console.log('Username:', newUser.username);
     console.log('Public Key:', newUser.publicKey);
+    console.log('Contact list created for user:', username);
     
     res.json({ 
       success: true, 
@@ -178,6 +186,10 @@ router.post('/register', async function(req, res, next) {
       error: error.message
     });
   }
+});
+
+router.post('/addcontact', async function(req, res, next) {
+
 });
 
 module.exports = router;
