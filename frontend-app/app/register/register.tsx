@@ -19,10 +19,11 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-export async function loader() {
+export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   if (isAuthenticated()) {
-    return redirect('/chat');
+    throw redirect('/chat');
   }
+  return null;
 }
 
 export default function Register() {

@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChatSidebar } from "./components/ChatSidebar";
 import { ChatHeader } from "./components/ChatHeader";
 import { ChatMessages } from "./components/ChatMessages";
 import { ChatInput } from "./components/ChatInput";
 import type { Route } from "./+types/chat";
+import SocketConnection from "../helpers/websocket";
+import { getAuthData } from "../helpers/storage";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -14,6 +16,31 @@ export function meta({}: Route.MetaArgs) {
 
 export default function Chat() {
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
+  const socketRef = useRef<SocketConnection | null>(null);
+  const isConnecting = useRef(false);
+
+  // WebSocket Initialization
+  useEffect(() => {
+
+    const authData = getAuthData();
+    
+    if (authData?.token) {
+      const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:3000';
+      socketRef.current = new SocketConnection(wsUrl, authData.token);
+      
+      console.log('[Chat] WebSocket connection initialized');
+    }
+
+    // Disconnect WS
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.close();
+        socketRef.current = null;
+        isConnecting.current = false;
+        console.log('[Chat] WebSocket connection closed');
+      }
+    };
+  }, []);
 
   const handleSendMessage = (message: string) => {
     console.log("Sending message:", message);
