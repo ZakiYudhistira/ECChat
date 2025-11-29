@@ -4,6 +4,7 @@ import { apiClient, ApiError } from "../helpers/api-client";
 
 export interface Contact {
   username: string;
+  publicKey?: string;
   addedAt: string;
   exists: boolean;
 }
@@ -24,7 +25,32 @@ export async function getContacts(): Promise<Contact[]> {
 
     return data.contacts || [];
   } catch (error) {
-    console.error('Get contacts error:', error);
+    console.error('Remove contact error:', error);
+    if (error instanceof ApiError) {
+      throw new Error(error.message);
+    }
+    throw error;
+  }
+}
+
+export async function getContactPublicKey(contactUsername: string): Promise<string> {
+  try {
+    const authData = getAuthData();
+    if (!authData?.username) {
+      throw new Error('Not authenticated');
+    }
+
+    const data = await apiClient.get(
+      API_ROUTES.GET_CONTACT_PUBLIC_KEY.replace(':username', contactUsername)
+    );
+
+    if (!data.success || !data.publicKey) {
+      throw new Error('Failed to get contact public key');
+    }
+
+    return data.publicKey;
+  } catch (error) {
+    console.error('Get contact public key error:', error);
     if (error instanceof ApiError) {
       throw new Error(error.message);
     }

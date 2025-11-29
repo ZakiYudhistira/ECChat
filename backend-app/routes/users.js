@@ -192,4 +192,34 @@ router.post('/addcontact', async function(req, res, next) {
 
 });
 
+// GET /:username/publickey - Get user's public key
+router.get('/:username/publickey', async function(req, res, next) {
+  try {
+    const { username } = req.params;
+    
+    // Find user
+    const user = await User.findOne({ username }).select('username publicKey');
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      username: user.username,
+      publicKey: user.publicKey
+    });
+  } catch (error) {
+    console.error('Get public key error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve public key',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

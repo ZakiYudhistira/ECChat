@@ -1,11 +1,14 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { ChatSidebar } from "./components/ChatSidebar";
 import { ChatHeader } from "./components/ChatHeader";
 import { ChatMessages } from "./components/ChatMessages";
 import { ChatInput } from "./components/ChatInput";
 import type { Route } from "./+types/chat";
-import SocketConnection from "../helpers/websocket";
 import { getAuthData } from "../helpers/storage";
+import { ChatroomController } from "../controller/Chatroom";
+import { getContactPublicKey } from "../controller/Contact";
+import { useWebSocketMessages } from "../hooks/useWebSocketMessages";
+import { toast } from "sonner";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -16,35 +19,66 @@ export function meta({}: Route.MetaArgs) {
 
 export default function Chat() {
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
-  const socketRef = useRef<SocketConnection | null>(null);
-  const isConnecting = useRef(false);
+  const [otherUsername, setOtherUsername] = useState<string>("");
+  const [otherPublicKey, setOtherPublicKey] = useState<string>("");
+  
+  const authData = getAuthData();
 
-  // WebSocket Initialization
+  // Use WebSocket messages hook
+  const { messages, sendMessage, isConnected, isLoading } = useWebSocketMessages({
+    roomId: selectedChat,
+    otherUsername,
+    otherPublicKey
+  });
+
+  // When chatroom is selected, fetch other user's info
   useEffect(() => {
-
-    const authData = getAuthData();
+    let isMounted = true;
     
-    if (authData?.token) {
-      const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:3000';
-      socketRef.current = new SocketConnection(wsUrl, authData.token);
-      
-      console.log('[Chat] WebSocket connection initialized');
-    }
+    const fetchOtherUserInfo = async () => {
+      if (!selectedChat || !authData) {
+        setOtherUsername("");
+        setOtherPublicKey("");
+        return;
+      }
 
-    // Disconnect WS
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.close();
-        socketRef.current = null;
-        isConnecting.current = false;
-        console.log('[Chat] WebSocket connection closed');
+      try {
+        // Extract other username from room_id
+        const participants = selectedChat.split('-');
+        const other = participants.find(p => p !== authData.username) || "";
+        
+        if (!isMounted) return;
+        setOtherUsername(other);
+
+        // Fetch other user's public key
+        const publicKey = await getContactPublicKey(other);
+        
+        if (!isMounted) return;
+        setOtherPublicKey(publicKey);
+        
+        console.log(`Selected chat with: ${other}, public key loaded`);
+      } catch (error) {
+        if (!isMounted) return;
+        console.error('Failed to fetch other user public key:', error);
+        toast.error('Failed to load contact info');
       }
     };
-  }, []);
 
-  const handleSendMessage = (message: string) => {
-    console.log("Sending message:", message);
-    // TODO: Implement message sending logic
+    fetchOtherUserInfo();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedChat, authData]);
+
+  const handleSendMessage = async (message: string) => {
+    if (!message.trim()) return;
+    
+    try {
+      await sendMessage(message);
+    } catch (error) {
+      console.error('Failed to send message:', error);
+    }
   };
 
   return (
@@ -57,11 +91,17 @@ export default function Chat() {
       {selectedChat ? (
         <div className="flex-1 flex flex-col">
           <ChatHeader 
-            name="Design chat" 
-            status="23 members, 12 online" 
+            name={otherUsername || "Chat"}
+            status="Active" 
           />
           
-          <ChatMessages />
+          <ChatMessages 
+            messages={messages}
+            isLoading={isLoading}
+            selectedRoomId={selectedChat}
+            otherUsername={otherUsername}
+            otherPublicKey={otherPublicKey}
+          />
           
           <ChatInput onSendMessage={handleSendMessage} />
         </div>

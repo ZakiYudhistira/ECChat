@@ -1,5 +1,8 @@
+import { useEffect, useState } from "react";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
+import { MessageController, type Message as EncryptedMessage } from "../../controller/Message";
+import { getAuthData } from "../../helpers/storage";
 
 export interface Message {
   id: string;
@@ -13,58 +16,121 @@ export interface Message {
   imageUrl?: string;
 }
 
-const mockMessages: Message[] = [
-  {
-    id: "1",
-    senderId: "1",
-    senderName: "Jasmin Lowery",
-    content: "I looked into React for our design system.",
-    timestamp: "09:32",
-    isCurrentUser: false,
-  },
-  {
-    id: "2",
-    senderId: "1",
-    senderName: "Jasmin Lowery",
-    content: "This is such a great project for our portfolio!",
-    timestamp: "09:32",
-    isCurrentUser: false,
-  },
-  {
-    id: "3",
-    senderId: "2",
-    senderName: "Alex Hunt",
-    content: "That's important news!",
-    timestamp: "09:34",
-    isCurrentUser: false,
-  },
-  {
-    id: "4",
-    senderId: "3",
-    senderName: "Alex Hunt",
-    content: "Jessie Rufina has successfully completed his probationary period and is now part of our team!",
-    timestamp: "09:34",
-    isCurrentUser: false,
-  },
-  {
-    id: "5",
-    senderId: "current",
-    senderName: "You",
-    content: "Yohoo, my congratulations! I will be glad to work with you on a new project!",
-    timestamp: "09:41",
-    isCurrentUser: true,
-  },
-];
-
 interface ChatMessagesProps {
-  messages?: Message[];
+  messages?: EncryptedMessage[];
+  isLoading?: boolean;
+  selectedRoomId?: string;
+  otherUsername?: string;
+  otherPublicKey?: string;
 }
 
-export function ChatMessages({ messages = mockMessages }: ChatMessagesProps) {
+export function ChatMessages({ messages = [], isLoading = false, selectedRoomId, otherUsername = "", otherPublicKey = "" }: ChatMessagesProps) {
+  const [decryptedMessages, setDecryptedMessages] = useState<Message[]>([]);
+  const authData = getAuthData();
+
+  useEffect(() => {
+    const decryptMessages = async () => {
+      
+      if (!authData || messages.length === 0) {
+        setDecryptedMessages([]);
+        return;
+      }
+
+      const decrypted: Message[] = [];
+
+      for (const msg of messages) {
+        try {
+          // Determine other user's public key
+          const isSender = msg.sender === authData.username;
+          const otherUser = isSender ? msg.receiver : msg.sender;
+          
+          // For now, use provided otherPublicKey or skip decryption
+          if (!otherPublicKey) {
+            console.warn('Missing public key for', otherUser);
+            decrypted.push({
+              id: `${msg.sender}_${msg.timestamp}`,
+              senderId: msg.sender,
+              senderName: msg.sender,
+              content: "[Waiting for contact public key...]",
+              timestamp: new Date(msg.timestamp).toLocaleTimeString([], { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+              }),
+              isCurrentUser: isSender,
+              type: "text"
+            });
+            continue;
+          }
+
+          // Decrypt message using ECDH shared secret
+          const plaintext = await MessageController.decryptMessage(
+            msg,
+            authData.privateKey,
+            otherPublicKey
+          );
+
+          // Format timestamp
+          const date = new Date(msg.timestamp);
+          const timeString = date.toLocaleTimeString([], { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          });
+
+          decrypted.push({
+            id: `${msg.sender}_${msg.timestamp}`,
+            senderId: msg.sender,
+            senderName: msg.sender,
+            content: plaintext,
+            timestamp: timeString,
+            isCurrentUser: msg.sender === authData.username,
+            type: "text"
+          });
+        } catch (error) {
+          console.error('Failed to decrypt message:', error);
+          // Show encrypted message as fallback
+          decrypted.push({
+            id: `${msg.sender}_${msg.timestamp}`,
+            senderId: msg.sender,
+            senderName: msg.sender,
+            content: "[Failed to decrypt message]",
+            timestamp: new Date(msg.timestamp).toLocaleTimeString([], { 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            }),
+            isCurrentUser: msg.sender === authData.username,
+            type: "text"
+          });
+        }
+      }
+
+      setDecryptedMessages(decrypted);
+    };
+
+    decryptMessages();
+  }, [messages]);
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-muted-foreground">
+        Loading messages...
+      </div>
+    );
+  }
+
+  if (decryptedMessages.length === 0) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-muted-foreground">
+        <div className="text-center">
+          <p className="text-sm">No messages yet</p>
+          <p className="text-xs mt-2">Start the conversation!</p>
+        </div>
+      </div>
+    );
+  }
   return (
     <ScrollArea className="flex-1 p-4">
       <div className="space-y-4">
-        {messages.map((message) => (
+        {decryptedMessages.map((message) => (
           <div
             key={message.id}
             className={`flex gap-3 ${message.isCurrentUser ? "flex-row-reverse" : ""}`}

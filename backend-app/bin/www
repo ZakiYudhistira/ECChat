@@ -7,8 +7,7 @@
 var app = require('../app');
 var debug = require('debug')('backend-app:server');
 var http = require('http');
-var WebSocket = require('ws');
-var jwt = require('jsonwebtoken');
+var { initializeWebSocket } = require('../websocket/handler');
 
 /**
  * Get port from environment and store in Express.
@@ -24,46 +23,9 @@ app.set('port', port);
 var server = http.createServer(app);
 
 /**
- * Listen on provided port, on all network interfaces.
+ * Initialize WebSocket server
  */
-
-/**
- * Websocket initiation
- */
-const wss = new WebSocket.Server({ server });
-
-/**
- * Clients mapping (keeping track of connected users)
- */
-const clients = new Map();
-
-wss.on('connection', (ws, req) => {
-  const params = new URL(req.url, `http://${req.headers.host}`).searchParams;
-  const token = params.get("token");
-
-  if (!token) {
-    ws.close();
-    return;
-  }
-
-  try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-    const username = payload.username;
-
-    clients.set(username, ws);
-    console.log(username, 'connected to WebSocket');
-
-    ws.on('close', () => {
-      clients.delete(username);
-      console.log(username, 'disconnected');
-    });
-    
-  } catch (err){
-    ws.close();
-  }
-
-
-  });
+initializeWebSocket(server);
 
 server.listen(port);
 server.on('error', onError);
