@@ -61,7 +61,10 @@ export default function Chat() {
             status="23 members, 12 online" 
           />
           
-          <ChatMessages />
+          <ChatMessages
+            selectedChat={selectedChat} 
+            onSelectChat={setSelectedChat} 
+          />
           
           <ChatInput onSendMessage={handleSendMessage} />
         </div>
