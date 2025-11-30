@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { useState, useEffect } from "react";
+import { Link, redirect, useNavigate } from "react-router";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -9,6 +9,9 @@ import type { Route } from "./+types/register";
 import { API_ROUTES } from "../../config/api";
 import { generateKeyPair } from "../helpers/crypto";
 
+import { isAuthenticated } from "../helpers/storage";
+import { toast } from "sonner";
+
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "ECC Register" },
@@ -16,12 +19,19 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
+export async function clientLoader({ request }: Route.ClientLoaderArgs) {
+  if (isAuthenticated()) {
+    throw redirect('/chat');
+  }
+  return null;
+}
+
 export default function Register() {
+  const navigate = useNavigate();  
   const [registerData, setRegisterData] = useState({ username: "", password: "", confirmPassword: "" });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isRegistering, setIsRegistering] = useState(false);
   const [keyPair, setKeyPair] = useState<{ publicKey: string; privateKey: string } | null>(null);
-  const navigate = useNavigate();
 
   const handleRegister = async (e: React.FormEvent) => {
       e.preventDefault();
@@ -86,6 +96,7 @@ export default function Register() {
 
 
       } catch (error) {
+      toast.error('Registration failed. Please try again.');
       console.error("Registration error:", error);
       setErrors({ general: error instanceof Error ? "Registration failed. Please try again: " + error.message : "Registration failed. Please try again." });
       setIsRegistering(false);

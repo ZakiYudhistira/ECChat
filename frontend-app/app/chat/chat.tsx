@@ -1,9 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChatSidebar } from "./components/ChatSidebar";
 import { ChatHeader } from "./components/ChatHeader";
 import { ChatMessages } from "./components/ChatMessages";
 import { ChatInput } from "./components/ChatInput";
 import type { Route } from "./+types/chat";
+import { getAuthData } from "../helpers/storage";
+import { sharedSecret } from "~/helpers/sharedsecret";
+import { useChatWebSocket } from "../hooks/useChatWebSocket";
+import { toast } from "sonner";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -14,10 +18,43 @@ export function meta({}: Route.MetaArgs) {
 
 export default function Chat() {
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
+  const [selectedChatUser, setSelectedChatUser] = useState<string | null>(null);
+  
+  const authData = getAuthData();
 
-  const handleSendMessage = (message: string) => {
-    console.log("Sending message:", message);
-    // TODO: Implement message sending logic
+  // Use WebSocket hook at parent level (single instance)
+  const { messages, isLoading, sendMessage, isConnected } = useChatWebSocket(selectedChat);
+
+  useEffect(() => {
+    if(!authData) return;
+    sharedSecret.setMyPrivateKey(authData.privateKey);
+  }, [authData?.privateKey])
+
+  // Update selected chat user when selectedChat changes
+  useEffect(() => {
+    if (selectedChat && authData?.username) {
+      // Remove current user from room_id (e.g., "alice-bob" -> "bob" for alice)
+      const participants = selectedChat.split('-');
+      const otherUser = participants.find(p => p !== authData.username) || '';
+      setSelectedChatUser(otherUser);
+    } else {
+      setSelectedChatUser(null);
+    }
+  }, [selectedChat, authData?.username]);
+
+  const handleSendMessage = async (message: string) => {
+    if (!selectedChat || !selectedChatUser) {
+      toast.error('No chat selected');
+      return;
+    }
+
+    try {
+      await sendMessage(message, selectedChatUser, selectedChat);
+      console.log('[Chat] Message sent successfully');
+    } catch (error) {
+      console.error('[Chat] Failed to send message:', error);
+      toast.error('Failed to send message');
+    }
   };
 
   return (
@@ -28,15 +65,25 @@ export default function Chat() {
       />
       
       {selectedChat ? (
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-h-0">
           <ChatHeader 
-            name="Design chat" 
-            status="23 members, 12 online" 
+            name={selectedChatUser || selectedChat}
+            status="Active" 
           />
           
-          <ChatMessages />
+          <ChatMessages
+            messages={messages}
+            isLoading={isLoading}
+            selectedChat={selectedChat} 
+            onSelectChat={setSelectedChat} 
+          />
           
-          <ChatInput onSendMessage={handleSendMessage} />
+          <ChatInput 
+            onSendMessage={handleSendMessage}
+            isConnected={isConnected}
+            roomId={selectedChat}
+            receiverUsername={selectedChatUser}
+          />
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center text-muted-foreground">

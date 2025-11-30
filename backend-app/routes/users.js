@@ -1,6 +1,7 @@
 var express = require('express');
 var router = express.Router();
 const User = require('../models/User');
+const Contact = require('../models/Contact');
 const NonceChallenge = require('../models/NonceChallenge');
 const elliptic = require('elliptic');
 const EC = elliptic.ec;
@@ -10,6 +11,45 @@ const jwt = require('jsonwebtoken');
 /* GET users listing. */
 router.get('/', function(req, res, next) {
   res.send('respond with a resource');
+});
+
+// GET /users/:username/publickey - retrieve a user's public key
+router.get('/:username/publickey', async function(req, res, next) {
+  try {
+    const { username } = req.params;
+    
+    // Validate username
+    if (!username) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username is required'
+      });
+    }
+    
+    // Find user
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    // Return public key
+    res.json({
+      success: true,
+      publicKey: user.publicKey,
+      username: user.username
+    });
+    
+  } catch (error) {
+    console.error('Get public key error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve public key',
+      error: error.message
+    });
+  }
 });
 
 // GET /login - send a random nonce as challenge
@@ -161,9 +201,16 @@ router.post('/register', async function(req, res, next) {
       publicKey
     });
 
+    // Create empty contact list for new user
+    await Contact.create({
+      username: username,
+      contactList: [] // Start with empty contact list
+    });
+
     console.log('New User Registered:');
     console.log('Username:', newUser.username);
     console.log('Public Key:', newUser.publicKey);
+    console.log('Contact list created for user:', username);
     
     res.json({ 
       success: true, 
@@ -178,6 +225,10 @@ router.post('/register', async function(req, res, next) {
       error: error.message
     });
   }
+});
+
+router.post('/addcontact', async function(req, res, next) {
+
 });
 
 module.exports = router;
