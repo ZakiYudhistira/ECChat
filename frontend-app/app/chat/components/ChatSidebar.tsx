@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "../../components/ui/avatar";
 import { Input } from "../../components/ui/input";
@@ -11,59 +11,8 @@ import { AddContactDialog } from "./AddContactDialog";
 import { ContactList } from "./ContactList";
 import { ConversationList } from "./ConversationList";
 import { type Contact } from "../../controller/Contact";
+import { getChatrooms, createChatroom, type Chatroom } from "../../controller/Chatroom"
 
-interface Conversation {
-  id: string;
-  name: string;
-  avatar?: string;
-  lastMessage: string;
-  timestamp: string;
-  unread: number;
-  online?: boolean;
-}
-
-const mockConversations: Conversation[] = [
-  {
-    id: "1",
-    name: "Design chat",
-    lastMessage: "That sounds like a creative idea!",
-    timestamp: "2m",
-    unread: 3,
-    online: true,
-  },
-  {
-    id: "2",
-    name: "Damon Campus",
-    lastMessage: "Let's schedule a meeting",
-    timestamp: "15m",
-    unread: 0,
-    online: true,
-  },
-  {
-    id: "3",
-    name: "Jayden Church",
-    lastMessage: "I finished the presentation",
-    timestamp: "1h",
-    unread: 0,
-    online: false,
-  },
-  {
-    id: "4",
-    name: "Jacob McNeal",
-    lastMessage: "Thanks for the update",
-    timestamp: "3h",
-    unread: 1,
-    online: false,
-  },
-  {
-    id: "5",
-    name: "Jasmin Lowery",
-    lastMessage: "See you tomorrow!",
-    timestamp: "5h",
-    unread: 0,
-    online: true,
-  },
-];
 
 interface ChatSidebarProps {
   selectedChat: string | null;
@@ -74,7 +23,55 @@ export function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarProps) {
   const navigate = useNavigate();
   const [showContacts, setShowContacts] = useState(false);
   const [selectedContact, setSelectedContact] = useState<string | null>(null);
+  const [chatrooms, setChatrooms] = useState<Chatroom[]>([]);
   const [contactRefreshTrigger, setContactRefreshTrigger] = useState(0);
+  const [isLoadingChatroom, setLoadingChatroom] = useState(false);
+
+  const authData = getAuthData();
+
+  useEffect(() => {
+    let ismounted = true;
+    
+    const loadChatrooms = async () => {
+      setLoadingChatroom(true);
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      try{
+        if(authData){
+          const chatrooms = await getChatrooms(authData.username);
+
+          if(ismounted){
+            setChatrooms(chatrooms);
+          }
+        }
+      } catch(error) {
+
+      } finally {
+        if (ismounted) {
+          setLoadingChatroom(false);
+        }
+      }
+    };
+
+    // Chatrooms fetching
+    loadChatrooms();
+    
+  }, [authData?.username]);
+
+
+  // Conversation loading
+  const conversations = chatrooms.map(room => ({
+    id: room.id,
+    name: room.participants.find(p => p !== authData?.username) || 'Unknown',
+    lastMessage: 'No messages yet',
+    timestamp: new Date().toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    }),
+    unread: 0,
+    online: false,
+  }));
   
   const handleLogout = () => {
     clearAuthData(); // Clear JWT and keys
@@ -86,19 +83,43 @@ export function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarProps) {
     setContactRefreshTrigger(prev => prev + 1); // Trigger contact list refresh
   };
 
-  const handleContactSelect = (contact: Contact) => {
-    setSelectedContact(contact.username);
-    // Here you could potentially start a conversation with the contact
-    console.log('Selected contact:', contact);
+  const handleContactSelect = async (contact: Contact) => {
+    try {
+      if (!authData) return;
+      
+      setSelectedContact(contact.username);
+      
+      // Create or get existing chatroom
+      const input = [authData.username, contact.username]
+      input.sort();
+      const chatroom = await createChatroom(input[0], input[1]);
+      
+      // Check if chatroom already exists in state
+      const existingIndex = chatrooms.findIndex(room => room.id === chatroom.id);
+      
+      if (existingIndex === -1) {
+        // Add new chatroom to state
+        setChatrooms(prev => [chatroom, ...prev]);
+      }
+      
+      // Select the chatroom
+      onSelectChat(chatroom.id);
+      
+      // Switch to messages view
+      setShowContacts(false);
+      
+      toast.success(`Chat with ${contact.username}`);
+    } catch (error) {
+      console.error('Failed to create chatroom:', error);
+      toast.error('Failed to start conversation');
+    }
   };
 
   const handleContactRemove = (username: string) => {
     if (selectedContact === username) {
       setSelectedContact(null);
     }
-  };
-  
-  const authData = getAuthData();
+  };  
 
   return (
     <div className="w-fit border-r border-border flex flex-col h-full">
@@ -137,9 +158,10 @@ export function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarProps) {
             />
           ) : (
             <ConversationList 
-              conversations={mockConversations}
+              conversations={conversations}
               selectedChat={selectedChat}
               onSelectChat={onSelectChat}
+              isLoading={isLoadingChatroom}
             />
           )}
         </div>

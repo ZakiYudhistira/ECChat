@@ -7,4 +7,6 @@ export const API_ROUTES = {
   GET_CONTACTS: `${API_BASE_URL}/contact/:username`,
   ADD_CONTACT: `${API_BASE_URL}/contact/add`,
   REMOVE_CONTACT: `${API_BASE_URL}/contact/remove`,
+  GET_CHATROOMS: `${API_BASE_URL}/chatroom/:username`,
+  CREATE_CHATROOM: `${API_BASE_URL}/chatroom/create`
 };

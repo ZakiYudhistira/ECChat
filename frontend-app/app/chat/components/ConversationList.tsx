@@ -15,9 +15,18 @@ interface ConversationListProps {
   conversations: Conversation[];
   selectedChat: string | null;
   onSelectChat: (id: string) => void;
+  isLoading?: boolean;
 }
 
-export function ConversationList({ conversations, selectedChat, onSelectChat }: ConversationListProps) {
+export function ConversationList({ conversations, selectedChat, onSelectChat, isLoading }: ConversationListProps) {
+  if (isLoading) {
+    return (
+      <div className="p-4 text-center text-muted-foreground">
+        <p>Loading conversations...</p>
+      </div>
+    );
+  }
+
   if (conversations.length === 0) {
     return (
       <div className="p-4 text-center text-muted-foreground">
@@ -32,9 +41,9 @@ export function ConversationList({ conversations, selectedChat, onSelectChat }: 
       {conversations.map((conversation) => (
         <button 
           key={conversation.id}
-          onClick={() => onSelectChat(conversation.id)}
+          onClick={() => {console.log(conversation.id); onSelectChat(conversation.id)}}
           className={`w-full p-3 rounded-lg flex items-start gap-3 hover:bg-accent transition-colors ${
-            selectedChat === conversation.id ? "bg-accent" : ""
+            selectedChat === conversation.id? "bg-accent" : ""
           }`}
         >
           <div className="relative">

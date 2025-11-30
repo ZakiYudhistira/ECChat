@@ -95,9 +95,7 @@ export function ContactList({ onContactSelect, selectedContactUsername, refreshT
         <button 
           key={contact.username}
           onClick={() => onContactSelect?.(contact)}
-          className={`w-full p-3 rounded-lg flex items-start gap-3 hover:bg-accent transition-colors ${
-            selectedContactUsername === contact.username ? "bg-accent" : ""
-          }`}
+          className={`w-full p-3 rounded-lg flex items-start gap-3 hover:bg-accent transition-color`}
         >
           <Avatar>
             <AvatarFallback className="bg-primary text-primary-foreground">
