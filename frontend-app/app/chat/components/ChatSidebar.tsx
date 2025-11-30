@@ -3,7 +3,7 @@ import { ScrollArea } from "../../components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "../../components/ui/avatar";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
-import { Search, Home, LogOut, Users } from "lucide-react";
+import { Search, Home, LogOut, BookUser } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { clearAuthData, getAuthData } from "~/helpers/storage";
 import { toast } from "sonner";
@@ -122,27 +122,27 @@ export function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarProps) {
   };  
 
   return (
-    <div className="w-fit border-r border-border flex flex-col h-full">
+    <div className="border-r border-border flex flex-col h-full min-w-85">
       <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold">{showContacts ? 'Contacts' : 'Messages'}</h2>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowContacts(!showContacts)}
-            className="text-primary hover:bg-primary/10"
-          >
-            <Users className="w-5 h-5" />
-          </Button>
-        </div>
-        <div className="relative flex items-center">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder={showContacts ? "Search contacts..." : "Search conversations..."}
-            className="pl-9"
-          />
-          <div className="ml-2">
+          <div className="flex items-center gap-2">
             <AddContactDialog onContactAdded={handleContactAdded} />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowContacts(!showContacts)}
+              className={`relative ${
+                showContacts 
+                  ? "bg-primary/10 text-primary" 
+                  : "hover:bg-primary/10"
+              }`}
+            >
+              <BookUser className="w-5 h-5" />
+              {showContacts && (
+                <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary" />
+              )}
+            </Button>
           </div>
         </div>
       </div>

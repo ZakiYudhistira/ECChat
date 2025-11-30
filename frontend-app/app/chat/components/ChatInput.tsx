@@ -48,7 +48,7 @@ export function ChatInput({ onSendMessage }: ChatInputProps) {
           </Button>
         ) : (
           <Button type="button" variant="ghost" size="icon">
-            <Mic className="h-5 w-5" />
+            <Send className="h-5 w-5" />
           </Button>
         )}
       </form>

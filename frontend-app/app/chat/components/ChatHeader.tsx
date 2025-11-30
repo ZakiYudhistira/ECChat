@@ -1,6 +1,4 @@
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
-import { Phone, Video, MoreVertical } from "lucide-react";
-import { Button } from "../../components/ui/button";
 
 interface ChatHeaderProps {
   name: string;
@@ -22,18 +20,6 @@ export function ChatHeader({ name, status, avatar }: ChatHeaderProps) {
           <h3 className="font-semibold">{name}</h3>
           <p className="text-sm text-muted-foreground">{status}</p>
         </div>
-      </div>
-      
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon">
-          <Phone className="h-5 w-5" />
-        </Button>
-        <Button variant="ghost" size="icon">
-          <Video className="h-5 w-5" />
-        </Button>
-        <Button variant="ghost" size="icon">
-          <MoreVertical className="h-5 w-5" />
-        </Button>
       </div>
     </div>
   );

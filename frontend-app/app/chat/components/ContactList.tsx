@@ -92,10 +92,10 @@ export function ContactList({ onContactSelect, selectedContactUsername, refreshT
   return (
     <div className="space-y-1">
       {contacts.map((contact) => (
-        <button 
+        <div 
           key={contact.username}
           onClick={() => onContactSelect?.(contact)}
-          className={`w-full p-3 rounded-lg flex items-start gap-3 hover:bg-accent transition-color`}
+          className={`w-full p-3 rounded-lg flex items-start gap-3 hover:bg-accent transition-color cursor-pointer`}
         >
           <Avatar>
             <AvatarFallback className="bg-primary text-primary-foreground">
@@ -149,7 +149,7 @@ export function ContactList({ onContactSelect, selectedContactUsername, refreshT
               Added {new Date(contact.addedAt).toLocaleDateString()}
             </p>
           </div>
-        </button>
+        </div>
       ))}
     </div>
   );

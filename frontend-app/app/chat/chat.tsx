@@ -16,14 +16,26 @@ export function meta({}: Route.MetaArgs) {
 
 export default function Chat() {
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
+  const [selectedChatUser, setSelectedChatUser] = useState<string | null>(null);
   const socketRef = useRef<SocketConnection | null>(null);
   const isConnecting = useRef(false);
+  
+  const authData = getAuthData();
+
+  // Update selected chat user when selectedChat changes
+  useEffect(() => {
+    if (selectedChat && authData?.username) {
+      // Remove current user from room_id (e.g., "alice-bob" -> "bob" for alice)
+      const participants = selectedChat.split('-');
+      const otherUser = participants.find(p => p !== authData.username) || '';
+      setSelectedChatUser(otherUser);
+    } else {
+      setSelectedChatUser(null);
+    }
+  }, [selectedChat, authData?.username]);
 
   // WebSocket Initialization
   useEffect(() => {
-
-    const authData = getAuthData();
-    
     if (authData?.token) {
       const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:3000';
       socketRef.current = new SocketConnection(wsUrl, authData.token);
@@ -57,8 +69,8 @@ export default function Chat() {
       {selectedChat ? (
         <div className="flex-1 flex flex-col">
           <ChatHeader 
-            name="Design chat" 
-            status="23 members, 12 online" 
+            name={selectedChatUser || selectedChat}
+            status="Active" 
           />
           
           <ChatMessages
