@@ -9,5 +9,6 @@ export const API_ROUTES = {
   REMOVE_CONTACT: `${API_BASE_URL}/contact/remove`,
   GET_CHATROOMS: `${API_BASE_URL}/chatroom/:username`,
   CREATE_CHATROOM: `${API_BASE_URL}/chatroom/create`,
-  GET_MESSAGES: `${API_BASE_URL}/message/:chatroomId`
+  GET_MESSAGES: `${API_BASE_URL}/message/:chatroomId`,
+  GET_PUBLIC_KEY: `${API_BASE_URL}/users/:username/publickey`
 };

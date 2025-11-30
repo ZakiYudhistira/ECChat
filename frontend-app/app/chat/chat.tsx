@@ -6,6 +6,7 @@ import { ChatInput } from "./components/ChatInput";
 import type { Route } from "./+types/chat";
 import SocketConnection from "../helpers/websocket";
 import { getAuthData } from "../helpers/storage";
+import { sharedSecret } from "~/helpers/sharedsecret";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -21,6 +22,11 @@ export default function Chat() {
   const isConnecting = useRef(false);
   
   const authData = getAuthData();
+
+  useEffect(() => {
+    if(!authData) return;
+    sharedSecret.setMyPrivateKey(authData.privateKey);
+  }, [authData?.privateKey])
 
   // Update selected chat user when selectedChat changes
   useEffect(() => {

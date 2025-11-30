@@ -13,6 +13,45 @@ router.get('/', function(req, res, next) {
   res.send('respond with a resource');
 });
 
+// GET /users/:username/publickey - retrieve a user's public key
+router.get('/:username/publickey', async function(req, res, next) {
+  try {
+    const { username } = req.params;
+    
+    // Validate username
+    if (!username) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username is required'
+      });
+    }
+    
+    // Find user
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    // Return public key
+    res.json({
+      success: true,
+      publicKey: user.publicKey,
+      username: user.username
+    });
+    
+  } catch (error) {
+    console.error('Get public key error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve public key',
+      error: error.message
+    });
+  }
+});
+
 // GET /login - send a random nonce as challenge
 router.get('/login', async function(req, res, next) {
   try {

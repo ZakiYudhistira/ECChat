@@ -16,6 +16,20 @@ export async function signMessage(message: string, privateKeyHex: string): Promi
   return r + s;
 }
 
+export async function hashMessage(
+  plaintext: string,
+  timestamp: string,
+  sender: string,
+  receiver: string
+): Promise<string> {
+  const data = `${plaintext}|${timestamp}|${sender}|${receiver}`;
+  const encoder = new TextEncoder();
+  const dataBuffer = encoder.encode(data);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 export async function generateKeyPair(password: string, username: string) {
   const encoder = new TextEncoder();
 
@@ -59,20 +73,15 @@ export async function generateKeyPair(password: string, username: string) {
 
 export async function encryptMessage(
   plaintext: string,
-  myPrivateKeyHex: string,
-  recipientPublicKeyHex: string
+  recipientUsername: string // Changed from public key to username
 ): Promise<string> {
   try {
-    // Cached shared secret retrieval
-    const sharedSecretBytes = sharedSecret.getSharedSecret(
-      myPrivateKeyHex,
-      recipientPublicKeyHex
-    );
+    // Get cached shared secret by username
+    const sharedSecretBytes = await sharedSecret.getSharedSecret(recipientUsername);
 
-    // Shared secret hash for AES key
     const keyMaterialBuffer = await crypto.subtle.digest('SHA-256', sharedSecretBytes);
     const keyMaterial = new Uint8Array(keyMaterialBuffer);
-
+    
     const key = await crypto.subtle.importKey(
       'raw',
       keyMaterial,
@@ -80,11 +89,8 @@ export async function encryptMessage(
       false,
       ['encrypt']
     );
-    
-    // Initialization vector for AES encryption
-    const iv = crypto.getRandomValues(new Uint8Array(iv_length));
 
-    // Plain text encryption
+    const iv = crypto.getRandomValues(new Uint8Array(iv_length));
     const encodedText = new TextEncoder().encode(plaintext);
     const ciphertext = await crypto.subtle.encrypt(
       { name: 'AES-GCM', iv },
@@ -92,13 +98,12 @@ export async function encryptMessage(
       encodedText
     );
 
-    // Combine IV and ciphertext
     const combined = new Uint8Array(iv_length + ciphertext.byteLength);
     combined.set(iv, 0);
     combined.set(new Uint8Array(ciphertext), iv_length);
 
     return btoa(String.fromCharCode(...combined));
-  } catch (error){
+  } catch (error) {
     console.error('Encryption error:', error);
     throw new Error('Failed to encrypt message');
   }
@@ -106,18 +111,15 @@ export async function encryptMessage(
 
 export async function decryptMessage(
   encryptedBase64: string,
-  myPrivateKeyHex: string,
-  senderPublicKeyHex: string
+  senderUsername: string // Changed from public key to username
 ): Promise<string> {
   try {
-    // Cached shared secret retrieval
-    const sharedSecretBytes = sharedSecret.getSharedSecret(
-      myPrivateKeyHex,
-      senderPublicKeyHex
-    );
+    // Get cached shared secret by username
+    const sharedSecretBytes = await sharedSecret.getSharedSecret(senderUsername);
 
-    // Shared secret hash for AES key
-    const keyMaterial = await crypto.subtle.digest('SHA-256', sharedSecretBytes);
+    const keyMaterialBuffer = await crypto.subtle.digest('SHA-256', sharedSecretBytes);
+    const keyMaterial = new Uint8Array(keyMaterialBuffer);
+    
     const key = await crypto.subtle.importKey(
       'raw',
       keyMaterial,
@@ -127,12 +129,9 @@ export async function decryptMessage(
     );
 
     const combined = Uint8Array.from(atob(encryptedBase64), c => c.charCodeAt(0));
-    
-    // Extract IV and ciphertext
     const iv = combined.slice(0, iv_length);
     const ciphertext = combined.slice(iv_length);
 
-    // Decrypt
     const decrypted = await crypto.subtle.decrypt(
       { name: 'AES-GCM', iv },
       key,

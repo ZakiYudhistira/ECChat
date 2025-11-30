@@ -12,6 +12,7 @@ import { ContactList } from "./ContactList";
 import { ConversationList } from "./ConversationList";
 import { type Contact } from "../../controller/Contact";
 import { getChatrooms, createChatroom, type Chatroom } from "../../controller/Chatroom"
+import { sharedSecret } from "~/helpers/sharedsecret";
 
 
 interface ChatSidebarProps {
@@ -74,6 +75,7 @@ export function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarProps) {
   }));
   
   const handleLogout = () => {
+    sharedSecret.clearAll();
     clearAuthData(); // Clear JWT and keys
     toast.success("Logged out successfully");
     navigate('/login', { replace: true });
