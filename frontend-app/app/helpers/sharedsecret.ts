@@ -67,7 +67,7 @@ class SharedSecretCache {
   /**
    * Get a user's public key (from cache or fetch from API)
    */
-  private async getPublicKey(username: string): Promise<string> {
+  public async getPublicKey(username: string): Promise<string> {
     const cached = this.publicKeyCache.get(username);
     if (cached) {
       console.log(`Using cached public key for ${username}`);
@@ -122,7 +122,6 @@ class SharedSecretCache {
 
     // Cache it
     this.cache.set(cacheKey, sharedSecretBytes);
-    this.publicKeyCache.set(otherUsername, otherPublicKey);
 
     return sharedSecretBytes;
   }

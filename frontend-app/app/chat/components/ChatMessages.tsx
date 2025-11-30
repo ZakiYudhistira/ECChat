@@ -1,67 +1,48 @@
-import { useState, useEffect } from "react";
 import { type Message } from "../../Model/Message";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
-import { getMessages } from "../../controller/Messages";
 import { getAuthData } from "../../helpers/storage";
+import { useEffect, useRef } from "react";
 
 interface ChatMessagesProps {
+  messages: Message[];
+  isLoading: boolean;
   selectedChat: string | null;
   onSelectChat: (id: string) => void;
 }
 
-export function ChatMessages({selectedChat, onSelectChat}: ChatMessagesProps) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+export function ChatMessages({messages, isLoading, selectedChat, onSelectChat}: ChatMessagesProps) {
   const authData = getAuthData();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const displayMessages = messages.map(msg => ({
+    ...msg,
+    id: msg._id || msg.id || `msg_${Date.now()}_${Math.random()}`,
+    isCurrentUser: msg.sender === authData?.username,
+    senderName: msg.sender,
+    content: msg.plaintext || msg.content,
+  }));
+
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    const fetchMessages = async () => {
-      if (!selectedChat) {
-        setMessages([]);
-        return;
-      }
-
-      setIsLoading(true);
-      try {
-        const fetchedMessages = await getMessages(selectedChat);
-        
-        // Transform messages for UI display
-        const transformedMessages = fetchedMessages.map(msg => ({
-          ...msg,
-          id: msg._id || `msg_${Date.now()}_${Math.random()}`,
-          isCurrentUser: msg.sender === authData?.username,
-          senderName: msg.sender,
-          content: msg.encrypted_message, // Show encrypted content for now
-          type: "text"
-        }));
-        
-        setMessages(transformedMessages);
-      } catch (error) {
-        console.error('Failed to fetch messages:', error);
-        setMessages([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchMessages();
-  }, [selectedChat, authData?.username]);
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
   
   return (
-    <div className="flex-1 p-4 h-full flex flex-col">
+    <div className="flex-1 min-h-0 p-4 flex flex-col overflow-hidden">
       {isLoading ? (
         <div className="flex items-center justify-center h-full">
           <p className="text-muted-foreground">Loading messages...</p>
         </div>
-      ) : messages.length === 0 ? (
+      ) : displayMessages.length === 0 ? (
         <div className="flex items-center justify-center h-full">
           <p className="text-muted-foreground">No messages yet. Start the conversation!</p>
         </div>
       ) : (
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 min-h-0" ref={scrollRef}>
           <div className="space-y-4">
-            {messages.map((message) => (
+            {displayMessages.map((message) => (
               <div
                 key={message.id}
                 className={`flex gap-3 ${message.isCurrentUser ? "flex-row-reverse" : ""}`}
@@ -103,6 +84,8 @@ export function ChatMessages({selectedChat, onSelectChat}: ChatMessagesProps) {
                 </div>
               </div>
             ))}
+            {/* Invisible anchor element at the bottom */}
+            <div ref={messagesEndRef} />
           </div>
         </ScrollArea>
       )}

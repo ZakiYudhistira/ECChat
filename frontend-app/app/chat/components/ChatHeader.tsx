@@ -8,7 +8,7 @@ interface ChatHeaderProps {
 
 export function ChatHeader({ name, status, avatar }: ChatHeaderProps) {
   return (
-    <div className="h-16 border-b border-border flex items-center justify-between px-4">
+    <div className="h-fit border-b border-border flex items-center justify-between px-4 py-2">
       <div className="flex items-center gap-3">
         <Avatar>
           <AvatarImage src={avatar} />

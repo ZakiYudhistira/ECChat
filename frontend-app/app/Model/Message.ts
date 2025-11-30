@@ -11,6 +11,7 @@ export interface Message {
   createdAt: Date;
   updatedAt: Date;
   // UI properties
+  plaintext?: string;
   isCurrentUser?: boolean;
   senderName?: string;
   senderAvatar?: string;

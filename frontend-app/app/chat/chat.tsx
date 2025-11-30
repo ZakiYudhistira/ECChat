@@ -1,12 +1,13 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { ChatSidebar } from "./components/ChatSidebar";
 import { ChatHeader } from "./components/ChatHeader";
 import { ChatMessages } from "./components/ChatMessages";
 import { ChatInput } from "./components/ChatInput";
 import type { Route } from "./+types/chat";
-import SocketConnection from "../helpers/websocket";
 import { getAuthData } from "../helpers/storage";
 import { sharedSecret } from "~/helpers/sharedsecret";
+import { useChatWebSocket } from "../hooks/useChatWebSocket";
+import { toast } from "sonner";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -18,10 +19,11 @@ export function meta({}: Route.MetaArgs) {
 export default function Chat() {
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const [selectedChatUser, setSelectedChatUser] = useState<string | null>(null);
-  const socketRef = useRef<SocketConnection | null>(null);
-  const isConnecting = useRef(false);
   
   const authData = getAuthData();
+
+  // Use WebSocket hook at parent level (single instance)
+  const { messages, isLoading, sendMessage, isConnected } = useChatWebSocket(selectedChat);
 
   useEffect(() => {
     if(!authData) return;
@@ -40,29 +42,19 @@ export default function Chat() {
     }
   }, [selectedChat, authData?.username]);
 
-  // WebSocket Initialization
-  useEffect(() => {
-    if (authData?.token) {
-      const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:3000';
-      socketRef.current = new SocketConnection(wsUrl, authData.token);
-      
-      console.log('[Chat] WebSocket connection initialized');
+  const handleSendMessage = async (message: string) => {
+    if (!selectedChat || !selectedChatUser) {
+      toast.error('No chat selected');
+      return;
     }
 
-    // Disconnect WS
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.close();
-        socketRef.current = null;
-        isConnecting.current = false;
-        console.log('[Chat] WebSocket connection closed');
-      }
-    };
-  }, []);
-
-  const handleSendMessage = (message: string) => {
-    console.log("Sending message:", message);
-    // TODO: Implement message sending logic
+    try {
+      await sendMessage(message, selectedChatUser, selectedChat);
+      console.log('[Chat] Message sent successfully');
+    } catch (error) {
+      console.error('[Chat] Failed to send message:', error);
+      toast.error('Failed to send message');
+    }
   };
 
   return (
@@ -73,18 +65,25 @@ export default function Chat() {
       />
       
       {selectedChat ? (
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-h-0">
           <ChatHeader 
             name={selectedChatUser || selectedChat}
             status="Active" 
           />
           
           <ChatMessages
+            messages={messages}
+            isLoading={isLoading}
             selectedChat={selectedChat} 
             onSelectChat={setSelectedChat} 
           />
           
-          <ChatInput onSendMessage={handleSendMessage} />
+          <ChatInput 
+            onSendMessage={handleSendMessage}
+            isConnected={isConnected}
+            roomId={selectedChat}
+            receiverUsername={selectedChatUser}
+          />
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center text-muted-foreground">
