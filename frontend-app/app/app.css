@@ -113,6 +113,8 @@
   bottom: 0;
   background: radial-gradient(circle at 50% 50%, rgba(255, 0, 0, 0.1) 0%, transparent 50%);
   animation: pulse 4s ease-in-out infinite;
+  z-index: -1;
+  pointer-events: none; /* ← Disable clicks on overlay */
 }
 
 @keyframes pulse {

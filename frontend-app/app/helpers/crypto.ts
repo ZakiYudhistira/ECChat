@@ -79,7 +79,7 @@ export async function encryptMessage(
     // Get cached shared secret by username
     const sharedSecretBytes = await sharedSecret.getSharedSecret(recipientUsername);
 
-    const keyMaterialBuffer = await crypto.subtle.digest('SHA-256', sharedSecretBytes);
+    const keyMaterialBuffer = await crypto.subtle.digest('SHA-256', sharedSecretBytes.buffer as ArrayBuffer);
     const keyMaterial = new Uint8Array(keyMaterialBuffer);
     
     const key = await crypto.subtle.importKey(
@@ -117,7 +117,7 @@ export async function decryptMessage(
     // Get cached shared secret by username
     const sharedSecretBytes = await sharedSecret.getSharedSecret(senderUsername);
 
-    const keyMaterialBuffer = await crypto.subtle.digest('SHA-256', sharedSecretBytes);
+    const keyMaterialBuffer = await crypto.subtle.digest('SHA-256', sharedSecretBytes.buffer as ArrayBuffer);
     const keyMaterial = new Uint8Array(keyMaterialBuffer);
     
     const key = await crypto.subtle.importKey(
