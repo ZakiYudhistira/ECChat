@@ -7,7 +7,14 @@ import type { Message } from '../Model/Message';
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3001';
 
-export function useChatWebSocket(roomId: string | null) {
+interface UseChatWebSocketCallbacks {
+  onNewMessage?: (message: Message) => void;
+}
+
+export function useChatWebSocket(
+  roomId: string | null,
+  callbacks?: UseChatWebSocketCallbacks
+) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -67,14 +74,26 @@ export function useChatWebSocket(roomId: string | null) {
 
     const chatSocket = new ChatSocket(WS_URL, authData.token, {
       onMessageReceived: (message) => {
-        // Add incoming message with unique ID using binary search insertion
+        // Only add message if it belongs to the current room
+        if (message.room_id === roomId) {
+          const messageWithId = assignMessageId(message);
+          setMessages(prev => insertMessageSorted(prev, messageWithId));
+        }
+        
+        // Always notify parent about new message (for conversation list updates)
         const messageWithId = assignMessageId(message);
-        setMessages(prev => insertMessageSorted(prev, messageWithId));
+        callbacks?.onNewMessage?.(messageWithId);
       },
       onMessageSent: (message) => {
-        // Optimistically add sent message with unique ID using binary search insertion
+        // Only add message if it belongs to the current room
+        if (message.room_id === roomId) {
+          const messageWithId = assignMessageId(message);
+          setMessages(prev => insertMessageSorted(prev, messageWithId));
+        }
+        
+        // Always notify parent about sent message
         const messageWithId = assignMessageId(message);
-        setMessages(prev => insertMessageSorted(prev, messageWithId));
+        callbacks?.onNewMessage?.(messageWithId);
       },
       onError: (error) => {
         console.error('[useChatWebSocket] Error:', error);
@@ -89,7 +108,7 @@ export function useChatWebSocket(roomId: string | null) {
       chatSocketRef.current = null;
       setIsConnected(false);
     };
-  }, [assignMessageId, insertMessageSorted]);
+  }, [assignMessageId, insertMessageSorted, callbacks, roomId]);
 
   // Load messages when room changes
   useEffect(() => {
