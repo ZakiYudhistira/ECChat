@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "../../components/ui/avatar";
 import { Input } from "../../components/ui/input";
@@ -11,67 +11,44 @@ import { AddContactDialog } from "./AddContactDialog";
 import { ContactList } from "./ContactList";
 import { ConversationList } from "./ConversationList";
 import { type Contact } from "../../controller/Contact";
-import { getChatrooms, createChatroom, type Chatroom } from "../../controller/Chatroom"
+import { createChatroom, type Chatroom } from "../../controller/Chatroom"
 import { sharedSecret } from "~/helpers/sharedsecret";
+import type { ConversationItem } from "../../hooks/useChatRooms";
 
 
 interface ChatSidebarProps {
   selectedChat: string | null;
   onSelectChat: (id: string) => void;
+  conversations: ConversationItem[];
+  isLoadingRooms: boolean;
+  onNewConversation: (chatroom: Chatroom) => void;
 }
 
-export function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarProps) {
+export function ChatSidebar({ 
+  selectedChat, 
+  onSelectChat, 
+  conversations,
+  isLoadingRooms,
+  onNewConversation
+}: ChatSidebarProps) {
   const navigate = useNavigate();
   const [showContacts, setShowContacts] = useState(false);
   const [selectedContact, setSelectedContact] = useState<string | null>(null);
-  const [chatrooms, setChatrooms] = useState<Chatroom[]>([]);
   const [contactRefreshTrigger, setContactRefreshTrigger] = useState(0);
-  const [isLoadingChatroom, setLoadingChatroom] = useState(false);
 
   const authData = getAuthData();
 
-  useEffect(() => {
-    let ismounted = true;
-    
-    const loadChatrooms = async () => {
-      setLoadingChatroom(true);
-
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      try{
-        if(authData){
-          const chatrooms = await getChatrooms(authData.username);
-
-          if(ismounted){
-            setChatrooms(chatrooms);
-          }
-        }
-      } catch(error) {
-
-      } finally {
-        if (ismounted) {
-          setLoadingChatroom(false);
-        }
-      }
-    };
-
-    // Chatrooms fetching
-    loadChatrooms();
-    
-  }, [authData?.username]);
-
-
-  // Conversation loading
-  const conversations = chatrooms.map(room => ({
-    id: room.id,
-    name: room.participants.find(p => p !== authData?.username) || 'Unknown',
-    lastMessage: 'No messages yet',
-    timestamp: new Date().toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+  // Transform conversations for ConversationList component
+  const conversationListItems = conversations.map(conv => ({
+    id: conv.id,
+    name: conv.otherUsername,
+    lastMessage: conv.lastMessage,
+    timestamp: new Date(conv.updatedAt || conv.createdAt || '').toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit'
     }),
-    unread: 0,
-    online: false,
+    unread: conv.unreadCount,
+    online: conv.online,
   }));
   
   const handleLogout = () => {
@@ -96,13 +73,8 @@ export function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarProps) {
       input.sort();
       const chatroom = await createChatroom(input[0], input[1]);
       
-      // Check if chatroom already exists in state
-      const existingIndex = chatrooms.findIndex(room => room.id === chatroom.id);
-      
-      if (existingIndex === -1) {
-        // Add new chatroom to state
-        setChatrooms(prev => [chatroom, ...prev]);
-      }
+      // Notify parent to add to conversation list
+      onNewConversation(chatroom);
       
       // Select the chatroom
       onSelectChat(chatroom.id);
@@ -160,10 +132,10 @@ export function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarProps) {
             />
           ) : (
             <ConversationList 
-              conversations={conversations}
+              conversations={conversationListItems}
               selectedChat={selectedChat}
               onSelectChat={onSelectChat}
-              isLoading={isLoadingChatroom}
+              isLoading={isLoadingRooms}
             />
           )}
         </div>

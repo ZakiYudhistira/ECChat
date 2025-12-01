@@ -7,7 +7,9 @@ import type { Route } from "./+types/chat";
 import { getAuthData } from "../helpers/storage";
 import { sharedSecret } from "~/helpers/sharedsecret";
 import { useChatWebSocket } from "../hooks/useChatWebSocket";
+import { useChatRooms } from "../hooks/useChatRooms";
 import { toast } from "sonner";
+import type { Message } from "../Model/Message";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -22,13 +24,54 @@ export default function Chat() {
   
   const authData = getAuthData();
 
-  // Use WebSocket hook at parent level (single instance)
-  const { messages, isLoading, sendMessage, isConnected } = useChatWebSocket(selectedChat);
+  // Manage chatrooms/conversations
+  const { 
+    conversations, 
+    isLoading: isLoadingRooms,
+    updateConversationWithMessage,
+    markAsRead,
+    addConversation
+  } = useChatRooms();
+
+  // Manage messages for selected chat
+  const { 
+    messages, 
+    isLoading: isLoadingMessages, 
+    sendMessage, 
+    isConnected 
+  } = useChatWebSocket(selectedChat, {
+    onNewMessage: (message: Message) => {
+      // Update conversation list with new message
+      const isCurrentRoom = message.room_id === selectedChat;
+      const shouldIncrementUnread = !isCurrentRoom && message.sender !== authData?.username;
+      
+      updateConversationWithMessage(
+        message.room_id,
+        message.plaintext || message.content || 'New message',
+        new Date(message.timestamp),
+        shouldIncrementUnread
+      );
+    }
+  });
 
   useEffect(() => {
     if(!authData) return;
     sharedSecret.setMyPrivateKey(authData.privateKey);
   }, [authData?.privateKey])
+
+  const handleSelectChat = (chatroomId: string) => {
+    setSelectedChat(chatroomId);
+    
+    // Mark as read when opening conversation
+    markAsRead(chatroomId);
+    
+    // Extract other user's name from room ID
+    if (authData?.username) {
+      const participants = chatroomId.split('-');
+      const otherUser = participants.find(p => p !== authData.username);
+      setSelectedChatUser(otherUser || null);
+    }
+  };
 
   // Update selected chat user when selectedChat changes
   useEffect(() => {
@@ -61,7 +104,10 @@ export default function Chat() {
     <div className="h-screen flex">
       <ChatSidebar 
         selectedChat={selectedChat} 
-        onSelectChat={setSelectedChat} 
+        onSelectChat={handleSelectChat}
+        conversations={conversations}
+        isLoadingRooms={isLoadingRooms}
+        onNewConversation={addConversation}
       />
       
       {selectedChat ? (
@@ -73,9 +119,9 @@ export default function Chat() {
           
           <ChatMessages
             messages={messages}
-            isLoading={isLoading}
+            isLoading={isLoadingMessages}
             selectedChat={selectedChat} 
-            onSelectChat={setSelectedChat} 
+            onSelectChat={handleSelectChat} 
           />
           
           <ChatInput 
