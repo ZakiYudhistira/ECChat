@@ -3,20 +3,12 @@ import { ChatSidebar } from "./components/ChatSidebar";
 import { ChatHeader } from "./components/ChatHeader";
 import { ChatMessages } from "./components/ChatMessages";
 import { ChatInput } from "./components/ChatInput";
-import type { Route } from "./+types/chat";
 import { getAuthData } from "../helpers/storage";
 import { sharedSecret } from "~/helpers/sharedsecret";
 import { useChatWebSocket } from "../hooks/useChatWebSocket";
 import { useChatRooms } from "../hooks/useChatRooms";
 import { toast } from "sonner";
 import type { Message } from "../Model/Message";
-
-export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "ECChat - Messages" },
-    { name: "description", content: "Chat with your contacts on ECChat" },
-  ];
-}
 
 export default function Chat() {
   const [selectedChat, setSelectedChat] = useState<string | null>(null);

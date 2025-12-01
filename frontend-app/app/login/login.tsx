@@ -1,32 +1,16 @@
 import { useState, useEffect } from "react";
-import { Link, redirect } from "react-router";
+import { Link, Navigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
-import type { Route } from "./+types/login";
 import { API_ROUTES } from "config/api";
 
 import {generateKeyPair, signMessage} from "../helpers/crypto";
 import { storeAuthData, isAuthenticated } from "../helpers/storage";
 
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import { Toaster, toast } from 'sonner';
-
-
-export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "ECC Login" },
-    { name: "description", content: "Login to your ECChat account" },
-  ];
-}
-
-export async function clientLoader({ request }: Route.ClientLoaderArgs) {
-  if (isAuthenticated()) {
-    throw redirect('/chat');
-  }
-  return null;
-}
 
 export default function Login() {
   const navigate = useNavigate();
