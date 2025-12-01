@@ -1,14 +1,9 @@
-import { Outlet, redirect } from "react-router";
-import type { Route } from "./+types/protected";
+import { Navigate } from "react-router";
 import { isAuthenticated } from "../helpers/storage";
 
-export async function clientLoader({ request }: Route.ClientLoaderArgs) {
+export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (!isAuthenticated()) {
-    throw redirect("/login");
+    return <Navigate to="/login" replace />;
   }
-  return null;
-}
-
-export default function ProtectedLayout() {
-  return <Outlet />;
+  return <>{children}</>;
 }

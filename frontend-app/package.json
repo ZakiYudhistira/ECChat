@@ -3,10 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "react-router build",
-    "dev": "react-router dev",
-    "start": "react-router-serve ./build/server/index.js",
-    "typecheck": "react-router typegen && tsc"
+    "build": "tsc && vite build",
+    "dev": "vite",
+    "start": "vite preview --port 3000 --host",
+    "typecheck": "tsc"
   },
   "dependencies": {
     "@noble/curves": "^2.0.1",
@@ -38,6 +38,7 @@
     "@types/node": "^22",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^4.7.0",
     "tailwindcss": "^4.1.13",
     "tw-animate-css": "^1.4.0",
     "typescript": "^5.9.2",

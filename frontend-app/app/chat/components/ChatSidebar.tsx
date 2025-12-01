@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "../../components/ui/avatar";
-import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
-import { Search, Home, LogOut, BookUser } from "lucide-react";
+import { Home, LogOut, BookUser } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { clearAuthData, getAuthData } from "~/helpers/storage";
 import { toast } from "sonner";
