@@ -1,5 +1,6 @@
 import elliptic from "elliptic";
-import { sharedSecret } from './sharedsecret'
+import pkg from 'js-sha3';
+const {sha3_256} = pkg;
 
 const EC = elliptic.ec;
 const ec = new EC("secp256k1"); // atau secp256r1
@@ -30,13 +31,8 @@ export async function hashMessage(
   sender: string,
   receiver: string
 ): Promise<string> {
-  const crypto = getCrypto();
   const data = `${plaintext}|${timestamp}|${sender}|${receiver}`;
-  const encoder = new TextEncoder();
-  const dataBuffer = encoder.encode(data);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return sha3_256(data);
 }
 
 export async function generateKeyPair(password: string, username: string) {

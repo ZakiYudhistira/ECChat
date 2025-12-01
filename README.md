@@ -26,7 +26,7 @@ ECChat implements end-to-end encryption using the Web Crypto API with the follow
 - **ECDH (P-521)** - Key exchange for shared secret generation
 - **ECDSA (P-521)** - Digital signatures for message authentication
 - **AES-GCM-256** - Symmetric encryption for message content
-- **SHA-256** - Cryptographic hashing
+- **SHA3-256** - Cryptographic hashing
 
 ### Encryption Workflow
 
