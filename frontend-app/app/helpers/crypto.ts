@@ -6,6 +6,14 @@ const ec = new EC("secp256k1"); // atau secp256r1
 
 const iv_length = 12;
 
+// Check if we're in browser environment
+const getCrypto = () => {
+  if (typeof window !== 'undefined' && window.crypto && window.crypto.subtle) {
+    return window.crypto;
+  }
+  throw new Error('Web Crypto API is not available. This function must be called in the browser.');
+};
+
 export async function signMessage(message: string, privateKeyHex: string): Promise<string> {
   const messageBytes = new TextEncoder().encode(message);
   const key = ec.keyFromPrivate(privateKeyHex);
@@ -22,6 +30,7 @@ export async function hashMessage(
   sender: string,
   receiver: string
 ): Promise<string> {
+  const crypto = getCrypto();
   const data = `${plaintext}|${timestamp}|${sender}|${receiver}`;
   const encoder = new TextEncoder();
   const dataBuffer = encoder.encode(data);
@@ -31,6 +40,7 @@ export async function hashMessage(
 }
 
 export async function generateKeyPair(password: string, username: string) {
+  const crypto = getCrypto();
   const encoder = new TextEncoder();
 
   // 1. Derive seed using PBKDF2
@@ -76,6 +86,7 @@ export async function encryptMessage(
   recipientUsername: string // Changed from public key to username
 ): Promise<string> {
   try {
+    const crypto = getCrypto();
     // Get cached shared secret by username
     const sharedSecretBytes = await sharedSecret.getSharedSecret(recipientUsername);
 
@@ -114,6 +125,7 @@ export async function decryptMessage(
   senderUsername: string // Changed from public key to username
 ): Promise<string> {
   try {
+    const crypto = getCrypto();
     // Get cached shared secret by username
     const sharedSecretBytes = await sharedSecret.getSharedSecret(senderUsername);
 
