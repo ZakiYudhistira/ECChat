@@ -4,7 +4,6 @@ export default [
     index("welcome/welcome.tsx"),
     route("login", "login/login.tsx"),
     route("register", "register/register.tsx"),
-    route("home", "routes/home.tsx"),
     route("test", "test/test.tsx"),
 
     layout("./routes/protected.tsx", [
