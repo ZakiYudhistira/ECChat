@@ -11,7 +11,7 @@ services:
       - backend
     restart: unless-stopped
     networks:
-      - ecchat-network
+      - edbert-network
 
   backend:
     build: ./backend-app
@@ -24,8 +24,8 @@ services:
       - PORT=3000
     restart: unless-stopped
     networks:
-      - ecchat-network
+      - edbert-network
 
 networks:
-  ecchat-network:
-    driver: bridge
+  edbert-network:
+    external: true
